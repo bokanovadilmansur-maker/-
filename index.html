@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neon Arena — 3D шутер</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- Игровой интерфейс -->
+<div id="hud" class="hidden">
+  <div id="vignette"></div>
+  <div id="crosshair"><i></i><i></i><i></i><i></i></div>
+  <div id="hitmarker"></div>
+
+  <div class="panel top-left">
+    <div class="label">ВОЛНА</div>
+    <div id="wave" class="big">1</div>
+    <div class="small">Врагов: <span id="enemies">0</span></div>
+  </div>
+
+  <div class="panel top-right">
+    <div class="label">ОЧКИ</div>
+    <div id="score" class="big">0</div>
+    <div id="combo" class="combo"></div>
+    <div class="small">Рекорд: <span id="best">0</span></div>
+  </div>
+
+  <div class="panel bottom-left">
+    <div class="label">ЗДОРОВЬЕ</div>
+    <div class="bar"><div id="hpbar"></div></div>
+    <div id="hp" class="big">100</div>
+  </div>
+
+  <div class="panel bottom-right">
+    <div id="weaponName" class="label">ПИСТОЛЕТ</div>
+    <div class="big"><span id="ammo">12</span><span class="dim"> / <span id="reserve">∞</span></span></div>
+    <div id="slots" class="slots">
+      <span data-slot="0">1</span><span data-slot="1">2</span><span data-slot="2">3</span><span data-slot="3">4</span><span data-slot="4">5</span>
+    </div>
+  </div>
+
+  <div id="reload" class="hidden"><div id="reloadbar"></div><span>ПЕРЕЗАРЯДКА</span></div>
+  <div id="banner"><div id="bannerTitle"></div><div id="bannerSub"></div></div>
+  <div id="scope" class="hidden"></div>
+  <canvas id="minimap" width="170" height="170"></canvas>
+  <div id="hint" class="hidden"></div>
+  <div id="lockhint" class="hidden">Кликни по экрану, чтобы захватить мышь</div>
+</div>
+
+<!-- Главное меню -->
+<div id="menu" class="screen">
+  <h1>NEON <span>ARENA</span></h1>
+  <p class="tagline">Открытый город · машины · танк · волны врагов</p>
+  <button id="btnStart" class="btn primary">ИГРАТЬ</button>
+  <div class="record">Рекорд: <b id="menuBest">0</b></div>
+
+  <div class="settings">
+    <label>Чувствительность мыши <b data-val="sens"></b>
+      <input type="range" data-set="sens" min="0.3" max="3" step="0.1"></label>
+    <label>Громкость <b data-val="volume"></b>
+      <input type="range" data-set="volume" min="0" max="1" step="0.05"></label>
+    <label>Угол обзора (FOV) <b data-val="fov"></b>
+      <input type="range" data-set="fov" min="60" max="105" step="1"></label>
+  </div>
+
+  <div class="controls">
+    <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> движение</span>
+    <span><kbd>Мышь</kbd> обзор</span>
+    <span><kbd>ЛКМ</kbd> огонь</span>
+    <span><kbd>R</kbd> перезарядка</span>
+    <span><kbd>Shift</kbd> бег</span>
+    <span><kbd>Space</kbd> прыжок</span>
+    <span><kbd>ПКМ</kbd> прицел</span>
+    <span><kbd>1</kbd>–<kbd>5</kbd> оружие</span>
+    <span><kbd>F</kbd> сесть в транспорт</span>
+    <span><kbd>Esc</kbd> пауза</span>
+  </div>
+</div>
+
+<!-- Пауза -->
+<div id="pause" class="screen hidden">
+  <h2>ПАУЗА</h2>
+  <button id="btnResume" class="btn primary">ПРОДОЛЖИТЬ</button>
+  <button id="btnRestart" class="btn">ЗАНОВО</button>
+  <button id="btnQuit" class="btn">В МЕНЮ</button>
+  <div class="settings">
+    <label>Чувствительность мыши <b data-val="sens"></b>
+      <input type="range" data-set="sens" min="0.3" max="3" step="0.1"></label>
+    <label>Громкость <b data-val="volume"></b>
+      <input type="range" data-set="volume" min="0" max="1" step="0.05"></label>
+    <label>Угол обзора (FOV) <b data-val="fov"></b>
+      <input type="range" data-set="fov" min="60" max="105" step="1"></label>
+  </div>
+</div>
+
+<!-- Конец игры -->
+<div id="over" class="screen hidden">
+  <h2 class="danger">ИГРА ОКОНЧЕНА</h2>
+  <div id="newRecord" class="newrecord hidden">НОВЫЙ РЕКОРД!</div>
+  <div class="stats">
+    <div><span>Очки</span><b id="overScore">0</b></div>
+    <div><span>Волна</span><b id="overWave">0</b></div>
+    <div><span>Убито</span><b id="overKills">0</b></div>
+    <div><span>Точность</span><b id="overAcc">0%</b></div>
+    <div><span>Рекорд</span><b id="overBest">0</b></div>
+  </div>
+  <button id="btnAgain" class="btn primary">ЕЩЁ РАЗ</button>
+  <button id="btnMenu" class="btn">В МЕНЮ</button>
+</div>
+
+<div id="error" class="screen hidden">
+  <h2 class="danger">Не удалось загрузить 3D-движок</h2>
+  <p class="tagline">Проверь подключение к интернету и обнови страницу.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>window.G = {};</script>
+<script src="js/audio.js"></script>
+<script src="js/effects.js"></script>
+<script src="js/level.js"></script>
+<script src="js/player.js"></script>
+<script src="js/explosions.js"></script>
+<script src="js/weapon.js"></script>
+<script src="js/enemy.js"></script>
+<script src="js/pickups.js"></script>
+<script src="js/vehicles.js"></script>
+<script src="js/waves.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
